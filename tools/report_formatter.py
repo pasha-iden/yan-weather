@@ -75,7 +75,7 @@ def format_weather_report(stats: Dict[str, Any]) -> str:
         f"• 10:00 — {format_temp(stats.get('temp_1000'))}",
         f"• 15:00 — {format_temp(stats.get('temp_1500'))}",
         f"• 20:00 — {format_temp(stats.get('temp_2000'))}",
-        f"\n Данные о погоде за сегодня, {today}, будут готовы в 20:05."
+        f"\nДанные о погоде за сегодня, {today}, будут готовы в 20:05."
     ]
 
     return "\n".join(report)

@@ -46,3 +46,48 @@ def get_weather_data(date_from: datetime, date_to: datetime) -> Optional[Dict[st
 
     except Exception:
         return None
+
+
+
+
+
+def get_daily_weather_data(date_from: datetime, date_to: datetime) -> Optional[Dict[str, Any]]:
+    """
+    Получение данных о погоде за период в ДНЕВНОМ формате.
+    Использует daily-параметры Open-Meteo вместо hourly.
+    """
+    TAMAN_LAT = 45.2119
+    TAMAN_LON = 36.7163
+
+    try:
+        start_date = date_from.strftime("%Y-%m-%d")
+        end_date = date_to.strftime("%Y-%m-%d")
+
+        params = {
+            "latitude": TAMAN_LAT,
+            "longitude": TAMAN_LON,
+            "daily": [
+                "temperature_2m_mean",  # средняя температура за день
+                "relative_humidity_2m_mean",  # средняя влажность
+                "precipitation_sum",  # сумма осадков
+                "wind_speed_10m_max",  # макс. скорость ветра
+                "wind_gusts_10m_max",  # макс. порывы
+                "cloud_cover_mean",  # средняя облачность
+                "sunshine_duration"  # продолжительность солнца
+            ],
+            "timezone": "Europe/Moscow",
+            "start_date": start_date,
+            "end_date": end_date
+        }
+
+        if date_from.date() < datetime.now().date():
+            url = "https://archive-api.open-meteo.com/v1/archive"
+        else:
+            url = "https://api.open-meteo.com/v1/forecast"
+
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        return response.json()
+
+    except Exception:
+        return None
