@@ -10,6 +10,6 @@ COPY main.py .
 COPY cron/ ./cron/
 COPY handlers/ ./handlers/
 
-EXPOSE
+EXPOSE 8000
 
 CMD ["python", "main.py"]

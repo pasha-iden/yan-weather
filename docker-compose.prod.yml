@@ -3,7 +3,9 @@ version: '3.8'
 services:
   bot:
     image: ghcr.io/pasha-iden/yanweather:latest
-    container_name: weather-bot
+    ports:
+      - "8000:8000"
     restart: always
+    container_name: weather-bot
     env_file:
       - .env
