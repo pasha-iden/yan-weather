@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  bot:
+    image: ghcr.io/pasha-iden/yanweather:latest
+    container_name: weather-bot
+    restart: always
+    env_file:
+      - .env
