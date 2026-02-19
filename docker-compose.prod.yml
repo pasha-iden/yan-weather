@@ -7,5 +7,7 @@ services:
       - "8000:8000"
     restart: always
     container_name: weather-bot
+    environment:
+      - TZ=Europe/Moscow
     env_file:
       - .env
