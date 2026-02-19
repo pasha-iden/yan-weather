@@ -9,12 +9,6 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 
-# шрифт
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.fonts import addMapping
-
-
 from tools.getter import get_daily_weather_data
 from tools.period_aggregator import extract_daily_data
 
