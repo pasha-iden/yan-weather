@@ -30,6 +30,7 @@ def get_weather_data(date_from: datetime, date_to: datetime) -> Optional[Dict[st
                 "cloud_cover",  # добавляем облачность
                 "sunshine_duration"  # добавляем продолжительность солнца
             ],
+            "wind_speed_unit": "ms",
             "timezone": "Europe/Moscow",
             "start_date": start_date,
             "end_date": end_date
@@ -75,6 +76,7 @@ def get_daily_weather_data(date_from: datetime, date_to: datetime) -> Optional[D
                 "cloud_cover_mean",  # средняя облачность
                 "sunshine_duration"  # продолжительность солнца
             ],
+            "wind_speed_unit": "ms",
             "timezone": "Europe/Moscow",
             "start_date": start_date,
             "end_date": end_date
