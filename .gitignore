@@ -15,5 +15,6 @@ tools/__pycache__/
 .coverage
 
 config.py
+users.json
 
 тз.txt
