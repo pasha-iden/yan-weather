@@ -1,18 +1,19 @@
 import requests
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 # Координаты Тамани
-TAMAN_LAT = 45.2119
-TAMAN_LON = 36.7163
+# TAMAN_LAT = 45.2119
+# TAMAN_LON = 36.7163
+
+TAMAN_LAT = 45.1649
+TAMAN_LON = 36.7857
 
 # ==================== ПОЛУЧЕНИЕ ПОГОДЫ ====================
 def get_weather_data(date_from: datetime, date_to: datetime) -> Optional[Dict[str, Any]]:
     """
     Получение почасовых данных о погоде за указанный период.
     """
-    TAMAN_LAT = 45.2119
-    TAMAN_LON = 36.7163
 
     try:
         start_date = date_from.strftime("%Y-%m-%d")
@@ -49,16 +50,11 @@ def get_weather_data(date_from: datetime, date_to: datetime) -> Optional[Dict[st
         return None
 
 
-
-
-
 def get_daily_weather_data(date_from: datetime, date_to: datetime) -> Optional[Dict[str, Any]]:
     """
     Получение данных о погоде за период в ДНЕВНОМ формате.
     Использует daily-параметры Open-Meteo вместо hourly.
     """
-    TAMAN_LAT = 45.2119
-    TAMAN_LON = 36.7163
 
     try:
         start_date = date_from.strftime("%Y-%m-%d")
@@ -92,4 +88,41 @@ def get_daily_weather_data(date_from: datetime, date_to: datetime) -> Optional[D
         return response.json()
 
     except Exception:
+        return None
+
+
+def get_hourly_forecast() -> Optional[Dict[str, Any]]:
+    """
+    Получение почасового прогноза погоды на ближайшие сутки
+    """
+    try:
+        params = {
+            "latitude": TAMAN_LAT,
+            "longitude": TAMAN_LON,
+            "hourly": [
+                "temperature_2m",
+                "relative_humidity_2m",
+                "precipitation",
+                "precipitation_probability",
+                "rain",
+                "cloud_cover",
+                "wind_speed_10m",
+                "wind_gusts_10m",
+                "wind_direction_10m",
+                "pressure_msl",
+                "sunshine_duration"
+            ],
+            "wind_speed_unit": "ms",
+            "timezone": "Europe/Moscow",
+            "forecast_days": 2
+        }
+
+        url = "https://api.open-meteo.com/v1/forecast"
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        # print(response.json())
+        return response.json()
+
+    except Exception as e:
+        print(f"Error fetching forecast: {e}")
         return None

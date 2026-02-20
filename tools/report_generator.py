@@ -127,7 +127,7 @@ def generate_pdf_bytes(data: List[Dict[str, Any]], period_name: str) -> io.Bytes
 
     doc = SimpleDocTemplate(
         pdf_bytes,
-        pagesize=landscape(A4),
+        pagesize=A4,
         rightMargin=30,
         leftMargin=30,
         topMargin=30,

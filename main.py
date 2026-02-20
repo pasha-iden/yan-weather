@@ -6,7 +6,7 @@ from aiogram import Bot, Dispatcher
 
 from handlers.start import start_router
 from handlers.weather import weather_router
-from cron.daily_sender import send_daily_weather
+from cron.daily_sender import send_tomorrow_forecast
 from tools.user_storage import load_users, save_users
 
 import os
@@ -24,8 +24,8 @@ dp.include_routers(start_router, weather_router)
 
 async def on_startup():
     load_users(os.path.exists('config.py'))
-    aiocron.crontab('5 20 * * *', tz=ZoneInfo('Europe/Moscow'))(
-        lambda: send_daily_weather(bot) ).start()
+    aiocron.crontab('50 5 * * *', tz=ZoneInfo('Europe/Moscow'))(
+        lambda: send_tomorrow_forecast(bot) ).start()
 
 
 async def on_shutdown():

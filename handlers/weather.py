@@ -5,9 +5,9 @@ from datetime import datetime, timedelta
 
 import sys
 sys.path.append(".")
-from tools.getter import get_weather_data
-from tools.status_calculate import calculate_daily_stats
-from tools.report_formatter import format_weather_report
+from tools.getter import get_weather_data, get_hourly_forecast
+from tools.status_calculate import calculate_daily_stats, calculate_forecast_period
+from tools.report_formatter import format_weather_report, format_hourly_forecast, format_tomorrow_forecast
 from tools.report_generator import generate_report_files
 from tools.keyboard import get_keyboard
 
@@ -17,8 +17,6 @@ weather_router = Router()
 @weather_router.callback_query(F.data == "report_daily")
 async def report_daily(callback: CallbackQuery):
     """Погода за последние завершённые сутки (с 20:00 до 20:00)"""
-    sent_message = await callback.message.answer("🔍 Получаю данные о погоде...")
-
     now = datetime.now()
     today_20 = now.replace(hour=20, minute=0, second=0, microsecond=0)
 
@@ -38,7 +36,6 @@ async def report_daily(callback: CallbackQuery):
     if weather_data:
         stats = calculate_daily_stats(weather_data, report_date)
         report = format_weather_report(stats)
-        await sent_message.delete()
         await callback.message.answer(
             report,
             parse_mode="HTML",
@@ -53,13 +50,9 @@ async def report_daily(callback: CallbackQuery):
     await callback.answer()
 
 
-
-
-
 @weather_router.callback_query(lambda c: c.data == "report_monthly")
 async def report_monthly(callback: CallbackQuery):
     """Отчет за прошлый месяц в Excel и PDF"""
-    sent_message = await callback.message.answer("📅 Генерирую отчет за прошлый месяц...")
 
     try:
         # Определяем период (прошлый месяц)
@@ -92,7 +85,6 @@ async def report_monthly(callback: CallbackQuery):
             InputMediaDocument(media=excel_file)
         ]
 
-        await sent_message.delete()
         await callback.message.answer_media_group(media_group)
 
         # Отдельное сообщение с текстом и кнопками
@@ -113,7 +105,6 @@ async def report_monthly(callback: CallbackQuery):
 @weather_router.callback_query(lambda c: c.data == "report_quarterly")
 async def report_quarterly(callback: CallbackQuery):
     """Отчет за прошлый квартал в Excel и PDF"""
-    sent_message = await callback.message.answer("📊 Генерирую отчет за прошлый квартал...")
 
     try:
         # Определяем прошлый квартал
@@ -148,7 +139,6 @@ async def report_quarterly(callback: CallbackQuery):
             InputMediaDocument(media=excel_file)
         ]
 
-        await sent_message.delete()
         await callback.message.answer_media_group(media_group)
 
         # Отдельное сообщение с текстом и кнопками
@@ -169,7 +159,6 @@ async def report_quarterly(callback: CallbackQuery):
 @weather_router.callback_query(lambda c: c.data == "report_yearly")
 async def report_yearly(callback: CallbackQuery):
     """Отчет за прошлый год в Excel и PDF"""
-    sent_message = await callback.message.answer("📈 Генерирую отчет за прошлый год...")
 
     try:
         # Прошлый год
@@ -196,7 +185,6 @@ async def report_yearly(callback: CallbackQuery):
             InputMediaDocument(media=excel_file)
         ]
 
-        await sent_message.delete()
         await callback.message.answer_media_group(media_group)
 
         # Отдельное сообщение с текстом и кнопками
@@ -208,6 +196,96 @@ async def report_yearly(callback: CallbackQuery):
     except Exception as e:
         await callback.message.answer(
             f"❌ Ошибка при генерации отчета: {e}",
+            reply_markup=get_keyboard()
+        )
+
+    await callback.answer()
+
+
+@weather_router.callback_query(lambda c: c.data == "forecast_hourly")
+async def forecast_hourly(callback: CallbackQuery):
+    """Почасовой прогноз на сутки вперед с 6 утра"""
+
+    try:
+        # Получаем данные
+        forecast_data = get_hourly_forecast()
+
+        if not forecast_data:
+            await callback.message.answer(
+                "❌ Не удалось получить прогноз",
+                reply_markup=get_keyboard()
+            )
+            await callback.answer()
+            return
+
+        # Извлекаем нужный период
+        hourly_data = calculate_forecast_period(forecast_data)
+
+        if not hourly_data:
+            await callback.message.answer(
+                "❌ Нет данных за указанный период",
+                reply_markup=get_keyboard()
+            )
+            await callback.answer()
+            return
+
+        # Форматируем и отправляем
+        report = format_hourly_forecast(hourly_data)
+
+        await callback.message.answer(
+            report,
+            parse_mode="HTML",
+            reply_markup=get_keyboard()
+        )
+
+    except Exception as e:
+        await callback.message.answer(
+            f"❌ Ошибка: {e}",
+            reply_markup=get_keyboard()
+        )
+
+    await callback.answer()
+
+
+@weather_router.callback_query(lambda c: c.data == "forecast_tomorrow")
+async def forecast_tomorrow(callback: CallbackQuery):
+    """Прогноз на завтра (только агрегированные данные)"""
+
+    try:
+        # Получаем данные
+        forecast_data = get_hourly_forecast()
+
+        if not forecast_data:
+            await callback.message.answer(
+                "❌ Не удалось получить прогноз",
+                reply_markup=get_keyboard()
+            )
+            await callback.answer()
+            return
+
+        # Извлекаем нужный период
+        hourly_data = calculate_forecast_period(forecast_data)
+
+        if not hourly_data:
+            await callback.message.answer(
+                "❌ Нет данных за указанный период",
+                reply_markup=get_keyboard()
+            )
+            await callback.answer()
+            return
+
+        # Форматируем только агрегированные данные
+        report = format_tomorrow_forecast(hourly_data)
+
+        await callback.message.answer(
+            report,
+            parse_mode="HTML",
+            reply_markup=get_keyboard()
+        )
+
+    except Exception as e:
+        await callback.message.answer(
+            f"❌ Ошибка: {e}",
             reply_markup=get_keyboard()
         )
 

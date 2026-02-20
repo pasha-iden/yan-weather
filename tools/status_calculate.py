@@ -83,3 +83,50 @@ def calculate_daily_stats(weather_data: Dict[str, Any], target_date: datetime) -
             print(f"Warning: Hour {hour}:00 is outside the period")
 
     return stats
+
+
+def calculate_forecast_period(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    Извлекает из данных прогноз на 24 часа, начиная со следующего часа
+    """
+    hourly = data["hourly"]
+    times = hourly["time"]
+
+    now = datetime.now()
+    current_hour_str = now.strftime("%Y-%m-%dT%H:00")
+
+    # Находим индекс текущего часа
+    current_index = None
+    for i, t in enumerate(times):
+        if t >= current_hour_str:
+            current_index = i
+            break
+
+    if current_index is None:
+        return []
+
+    # Начинаем со следующего часа
+    start_index = current_index + 1
+
+    result = []
+    for i in range(start_index, min(start_index + 24, len(times))):
+        if hourly["temperature_2m"][i] is None:
+            break
+
+        hour_data = {
+            "time": times[i],
+            "temp": hourly["temperature_2m"][i],
+            "humidity": hourly["relative_humidity_2m"][i],
+            "precipitation": hourly["precipitation"][i],
+            "precip_prob": hourly["precipitation_probability"][i],
+            "rain": hourly["rain"][i],
+            "cloud": hourly["cloud_cover"][i],
+            "wind_speed": hourly["wind_speed_10m"][i],
+            "wind_gusts": hourly["wind_gusts_10m"][i],
+            "wind_dir": hourly["wind_direction_10m"][i],
+            "pressure": hourly["pressure_msl"][i],
+            "sunshine": hourly["sunshine_duration"][i]  # 👈 добавили
+        }
+        result.append(hour_data)
+
+    return result
