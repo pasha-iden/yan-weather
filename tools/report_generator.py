@@ -8,9 +8,25 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
+from reportlab.lib.styles import ParagraphStyle
 
 from tools.getter import get_daily_weather_data
 from tools.period_aggregator import extract_daily_data
+
+# шрифты:
+import os
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.fonts import addMapping
+
+# Регистрируем шрифты
+FONT_REGULAR = os.path.join("fonts", "DejaVuSans.ttf")
+FONT_BOLD = os.path.join("fonts", "DejaVuSans-Bold.ttf")
+pdfmetrics.registerFont(TTFont('DejaVu', FONT_REGULAR))
+pdfmetrics.registerFont(TTFont('DejaVu-Bold', FONT_BOLD))
+addMapping('DejaVu', 0, 0, 'DejaVu')  # normal
+addMapping('DejaVu', 1, 0, 'DejaVu-Bold')  # bold
+RUSSIAN_FONT = 'DejaVu'
 
 
 def get_period_data(year: int, month: int = None, quarter: int = None) -> List[Dict[str, Any]]:
@@ -119,6 +135,21 @@ def generate_pdf_bytes(data: List[Dict[str, Any]], period_name: str) -> io.Bytes
     )
 
     styles = getSampleStyleSheet()
+
+    # Переопределяем стандартные стили на русский шрифт
+    styles['Title'].fontName = RUSSIAN_FONT
+    styles['Normal'].fontName = RUSSIAN_FONT
+
+    # Создаем стиль для жирного текста
+    styles.add(ParagraphStyle(
+        name='RussianBold',
+        fontName=RUSSIAN_FONT,
+        fontSize=10,
+        leading=12,
+        alignment=0,
+        spaceAfter=6
+    ))
+
     title_style = styles['Title']
     title_style.alignment = 1  # Center
 
@@ -133,8 +164,8 @@ def generate_pdf_bytes(data: List[Dict[str, Any]], period_name: str) -> io.Bytes
 
     # Заголовки таблицы
     headers = [
-        "Дата", "Темп\n°C", "Влаж\n%", "Осадки\nмм",
-        "Ветер\nм/с", "Порывы\nм/с", "Облач\n%", "Солнце\nч"
+        "Дата", "Температура\n°C", "Влажность\n%", "Осадки\nмм",
+        "Ветер\nм/с", "Порывы\nм/с", "Облачность\n%", "Солнце\nч"
     ]
     table_data.append(headers)
 
@@ -152,16 +183,17 @@ def generate_pdf_bytes(data: List[Dict[str, Any]], period_name: str) -> io.Bytes
         ]
         table_data.append(row)
 
-    # Стиль таблицы
+    # Стиль таблицы с русским шрифтом
     table = Table(table_data, repeatRows=1)
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2C3E50')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 0), (-1, 0), RUSSIAN_FONT),
         ('FONTSIZE', (0, 0), (-1, 0), 10),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
         ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('FONTNAME', (0, 1), (-1, -1), RUSSIAN_FONT),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
         ('FONTSIZE', (0, 1), (-1, -1), 8),
     ]))
@@ -181,7 +213,7 @@ def generate_pdf_bytes(data: List[Dict[str, Any]], period_name: str) -> io.Bytes
         f"Ср. температура: {avg_temp:.1f}°C | "
         f"Осадков за период: {total_precip:.1f} мм | "
         f"Ср. облачность: {avg_cloud:.0f}%</b>",
-        styles['Normal']
+        styles['RussianBold']  # используем жирный стиль
     )
     elements.append(summary)
 

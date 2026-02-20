@@ -5,10 +5,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY tools/ ./tools/
 COPY main.py .
-COPY cron/ ./cron/
+COPY tools/ ./tools/
 COPY handlers/ ./handlers/
+COPY cron/ ./cron/
+COPY fonts/ ./fonts/
 
 EXPOSE 8000
 
