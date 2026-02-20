@@ -4,6 +4,7 @@ from aiogram.types import Message
 import sys
 sys.path.append(".")
 from tools.keyboard import get_keyboard
+from tools.user_storage import add_user
 
 start_router = Router()
 
@@ -18,3 +19,4 @@ async def cmd_start(message: Message):
         parse_mode="HTML",
         reply_markup=get_keyboard()
     )
+    add_user(message.from_user.id, message.message_id)

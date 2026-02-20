@@ -11,3 +11,5 @@ services:
       - TZ=Europe/Moscow
     env_file:
       - .env
+    volumes:
+      - ./data:/app/data
