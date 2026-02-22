@@ -127,10 +127,10 @@ def format_summary_report(hourly_data: List[Dict[str, Any]], period: str = "tomo
 
     # Строка осадков (с вероятностью только для прогнозов)
     if period == "yesterday":
-        precip_line = f"Осадки: {total_precip:.1f} мм"
+        precip_line = f"Осадки: {total_precip:.0f} мм"
     else:
         max_precip_prob = max([h["precip_prob"] for h in hourly_data if h["precip_prob"] is not None] or [0])
-        precip_line = f"Осадки: {total_precip:.1f} мм (вер. {max_precip_prob}%)"
+        precip_line = f"Осадки: {total_precip:.0f} мм (вер. {max_precip_prob}%)"
 
     summary = (
         f"<b>{titles.get(period)}</b>\n\n"
