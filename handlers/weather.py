@@ -5,49 +5,144 @@ from datetime import datetime, timedelta
 
 import sys
 sys.path.append(".")
-from tools.getter import get_weather_data, get_hourly_forecast
-from tools.status_calculate import calculate_daily_stats, calculate_forecast_period
-from tools.report_formatter import format_weather_report, format_hourly_forecast, format_tomorrow_forecast
+from tools.getter import get_weather_data
+from tools.status_calculate import calculate_hourly_data
+from tools.report_formatter import format_hourly_data, format_summary_report
 from tools.report_generator import generate_report_files
 from tools.keyboard import get_keyboard
 
 weather_router = Router()
 
 
-@weather_router.callback_query(F.data == "report_daily")
-async def report_daily(callback: CallbackQuery):
-    """Погода за последние завершённые сутки (с 20:00 до 20:00)"""
-    now = datetime.now()
-    today_20 = now.replace(hour=20, minute=0, second=0, microsecond=0)
+@weather_router.callback_query(F.data == "report_yesterday")
+async def report_yesterday(callback: CallbackQuery):
 
-    # ВСЕГДА берём последние завершённые сутки (с 20:00 до 20:00)
-    if now < today_20:
-        # Если сейчас меньше 20:00, берём позавчера 20:00 -> вчера 20:00
-        period_end = today_20 - timedelta(days=1)  # вчера 20:00
-        period_start = period_end - timedelta(days=1)  # позавчера 20:00
-        report_date = period_end  # дата отчёта = вчера
-    else:
-        # Если сейчас больше или равно 20:00, берём вчера 20:00 -> сегодня 20:00
-        period_end = today_20  # сегодня 20:00
-        period_start = today_20 - timedelta(days=1)  # вчера 20:00
-        report_date = period_end  # дата отчёта = сегодня
+    try:
+        # Получаем сырые данные
+        raw_data = get_weather_data("yesterday")
+        if not raw_data:
+            await callback.message.answer(
+                "❌ Не удалось получить данные за вчера",
+                reply_markup=get_keyboard()
+            )
+            await callback.answer()
+            return
 
-    weather_data = get_weather_data(period_start, period_end)
-    if weather_data:
-        stats = calculate_daily_stats(weather_data, report_date)
-        report = format_weather_report(stats)
+        # Преобразуем в список почасовых словарей
+        hourly_data = calculate_hourly_data(raw_data, "yesterday")
+        if not hourly_data:
+            await callback.message.answer(
+                "❌ Ошибка обработки данных",
+                reply_markup=get_keyboard()
+            )
+            await callback.answer()
+            return
+
+        # Форматируем почасовые данные
+        report = format_hourly_data(hourly_data, "yesterday")
+
+        # Отправляем готовый отчёт
         await callback.message.answer(
             report,
             parse_mode="HTML",
             reply_markup=get_keyboard()
         )
-    else:
+
+    except Exception as e:
         await callback.message.answer(
-            "❌ Не удалось получить данные о погоде.",
+            f"❌ Ошибка: {e}",
             reply_markup=get_keyboard()
         )
 
     await callback.answer()
+
+
+@weather_router.callback_query(F.data == "report_today")
+async def report_today(callback: CallbackQuery):
+
+    try:
+        # Получаем сырые данные
+        raw_data = get_weather_data("forecast")
+        if not raw_data:
+            await callback.message.answer(
+                "❌ Не удалось получить данные за вчера",
+                reply_markup=get_keyboard()
+            )
+            await callback.answer()
+            return
+
+        # Преобразуем в список почасовых словарей
+        hourly_data = hourly_data = calculate_hourly_data(raw_data, "forecast", "today")
+        if not hourly_data:
+            await callback.message.answer(
+                "❌ Ошибка обработки данных",
+                reply_markup=get_keyboard()
+            )
+            await callback.answer()
+            return
+
+        # Форматируем почасовые данные
+        report = format_hourly_data(hourly_data, "today")
+
+        # Отправляем готовый отчёт
+        await callback.message.answer(
+            report,
+            parse_mode="HTML",
+            reply_markup=get_keyboard()
+        )
+
+    except Exception as e:
+        await callback.message.answer(
+            f"❌ Ошибка: {e}",
+            reply_markup=get_keyboard()
+        )
+
+    await callback.answer()
+
+
+@weather_router.callback_query(F.data == "report_tomorrow")
+async def report_tomorrow(callback: CallbackQuery):
+
+    try:
+        # Получаем сырые данные
+        raw_data = get_weather_data("forecast")
+        if not raw_data:
+            await callback.message.answer(
+                "❌ Не удалось получить данные за вчера",
+                reply_markup=get_keyboard()
+            )
+            await callback.answer()
+            return
+
+        # Преобразуем в список почасовых словарей
+        hourly_data = calculate_hourly_data(raw_data, "forecast", "tomorrow")
+        if not hourly_data:
+            await callback.message.answer(
+                "❌ Ошибка обработки данных",
+                reply_markup=get_keyboard()
+            )
+            await callback.answer()
+            return
+
+        # Форматируем почасовые данные
+        report = format_hourly_data(hourly_data, "tomorrow")
+
+        # Отправляем готовый отчёт
+        await callback.message.answer(
+            report,
+            parse_mode="HTML",
+            reply_markup=get_keyboard()
+        )
+
+    except Exception as e:
+        await callback.message.answer(
+            f"❌ Ошибка: {e}",
+            reply_markup=get_keyboard()
+        )
+
+    await callback.answer()
+
+
 
 
 @weather_router.callback_query(lambda c: c.data == "report_monthly")
@@ -202,13 +297,16 @@ async def report_yearly(callback: CallbackQuery):
     await callback.answer()
 
 
+
+
+
 @weather_router.callback_query(lambda c: c.data == "forecast_hourly")
 async def forecast_hourly(callback: CallbackQuery):
     """Почасовой прогноз на сутки вперед с 6 утра"""
 
     try:
         # Получаем данные
-        forecast_data = get_hourly_forecast()
+        forecast_data = get_weather_data("forecast")
 
         if not forecast_data:
             await callback.message.answer(
@@ -219,7 +317,7 @@ async def forecast_hourly(callback: CallbackQuery):
             return
 
         # Извлекаем нужный период
-        hourly_data = calculate_forecast_period(forecast_data)
+        hourly_data = calculate_hourly_data(forecast_data, "forecast", "now")
 
         if not hourly_data:
             await callback.message.answer(
@@ -230,7 +328,7 @@ async def forecast_hourly(callback: CallbackQuery):
             return
 
         # Форматируем и отправляем
-        report = format_hourly_forecast(hourly_data)
+        report = format_hourly_data(hourly_data, "next24h")
 
         await callback.message.answer(
             report,
@@ -253,7 +351,7 @@ async def forecast_tomorrow(callback: CallbackQuery):
 
     try:
         # Получаем данные
-        forecast_data = get_hourly_forecast()
+        forecast_data = get_weather_data("forecast")
 
         if not forecast_data:
             await callback.message.answer(
@@ -264,7 +362,7 @@ async def forecast_tomorrow(callback: CallbackQuery):
             return
 
         # Извлекаем нужный период
-        hourly_data = calculate_forecast_period(forecast_data)
+        hourly_data = calculate_hourly_data(forecast_data, "forecast", "now")
 
         if not hourly_data:
             await callback.message.answer(
@@ -275,7 +373,7 @@ async def forecast_tomorrow(callback: CallbackQuery):
             return
 
         # Форматируем только агрегированные данные
-        report = format_tomorrow_forecast(hourly_data)
+        report = format_summary_report(hourly_data, "next24h")
 
         await callback.message.answer(
             report,

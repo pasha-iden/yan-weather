@@ -8,12 +8,14 @@ def get_keyboard() -> InlineKeyboardMarkup:
 
     # Исторические отчеты - по два в ряд
     builder.row(
-        InlineKeyboardButton(text="Отчет за год", callback_data="report_yearly"),
-        InlineKeyboardButton(text="Отчет за квартал", callback_data="report_quarterly")
+        InlineKeyboardButton(text="Год", callback_data="report_yearly"),
+        InlineKeyboardButton(text="Квартал", callback_data="report_quarterly"),
+        InlineKeyboardButton(text="Месяц", callback_data="report_monthly")
     )
     builder.row(
-        InlineKeyboardButton(text="Отчет за месяц", callback_data="report_monthly"),
-        InlineKeyboardButton(text="Отчет за сутки", callback_data="report_daily")
+        InlineKeyboardButton(text="Вчера", callback_data="report_yesterday"),
+        InlineKeyboardButton(text="Сегодня", callback_data="report_today"),
+        InlineKeyboardButton(text="Завтра", callback_data="report_tomorrow")
     )
 
     builder.row(

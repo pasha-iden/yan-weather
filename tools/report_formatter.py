@@ -2,188 +2,144 @@ from typing import Dict, Any, List
 from datetime import datetime, timedelta
 
 
-def format_weather_report(stats: Dict[str, Any]) -> str:
+def format_hourly_data(hourly_data: List[Dict[str, Any]], period: str = "tomorrow") -> str:
     """
-    Форматирование отчёта о погоде
+    Универсальный форматтер для почасовых данных.
+
+    Параметры:
+        hourly_data: список почасовых словарей
+        period: "yesterday" - данные за вчера
+                "today" - данные за сегодня
+                "tomorrow" - прогноз на завтра
+                "next24h" - ближайшие 24 часа
     """
-    if not stats:
-        return "Не удалось получить данные о погоде"
+    if not hourly_data:
+        return "❌ Нет данных"
 
-    def format_temp(value):
-        if value is None:
-            return "—"
-        return f"{value:.1f}°C"
+    summary = format_summary_report(hourly_data, period=period)
+    lines = [summary]
+    lines.append("")
 
-    def format_num(value, suffix="", decimals=1):
-        if isinstance(value, (int, float)):
-            return f"{value:.{decimals}f}{suffix}"
-        return str(value)
+    for hour in hourly_data:
+        time_str = datetime.fromisoformat(hour["time"]).strftime("%H:%M")
+        hour_time = datetime.fromisoformat(hour["time"])
+        now = datetime.now()
+        sun_hours = hour.get("sunshine", 0) / 3600
 
-    # Функция для форматирования облачности с эмодзи
-    def format_cloud(value):
-        if value is None:
-            return "—"
-
-        if value < 10:
-            return f"{value:.0f}% Ясно"
-        elif value < 30:
-            return f"{value:.0f}% Малооблачно"
-        elif value < 60:
-            return f"{value:.0f}% Облачно с прояснениями"
-        elif value < 90:
-            return f"{value:.0f}% Пасмурно"
+        # Формируем каждую группу
+        temp_group = f"t {hour['temp']:.0f}°C"
+        precip_group = f"💧 {hour['precipitation']:.0f}мм"
+        if hour_time > now and hour['precip_prob'] is not None:
+            prob_group = f" ({hour['precip_prob']}%)"
         else:
-            return f"{value:.0f}% Сплошная облачность"
+            prob_group = ""
+        sun_group = f"☀️ {sun_hours:.1f}ч"
+        cloud_group = f"☁️ {hour['cloud']}%"
+        hum_group = f"🌫 {hour['humidity']}%"
+        wind_group = f"💨 {hour['wind_speed']:.0f}м/с"
+        gust_group = f" ({hour['wind_gusts']:.0f}м/с)"
 
-    # Функция для форматирования солнечных часов
-    def format_sunshine(hours):
-        if hours is None:
-            return "—"
-
-        # Округляем до 1 знака
-        hours_rounded = round(hours, 1)
-
-        # Выбираем эмодзи в зависимости от продолжительности
-        if hours_rounded < 1:
-            return f"{hours_rounded} ч"
-        elif hours_rounded < 3:
-            return f"{hours_rounded} "
-        elif hours_rounded < 6:
-            return f"{hours_rounded} ч"
-        elif hours_rounded < 9:
-            return f"{hours_rounded} ч"
-        else:
-            return f"{hours_rounded} ч"
-
-    today = datetime.now().strftime("%d.%m.%Y")
-    report_date = datetime.strptime(stats['date'], "%d.%m.%Y")
-    previous_date = (report_date - timedelta(days=1)).strftime("%d.%m.%Y")
-
-    report = [
-        f"<b>Погода в Тамани за 20:00 {previous_date} - 20:00 {stats['date']}</b>\n",
-        f"<b>Средние показатели за сутки:</b>",
-        f"• Температура: {format_num(stats['avg_temperature'], '°C')}",
-        f"• Влажность: {format_num(stats['avg_humidity'], '%', 0)}",
-        f"• Осадки: {format_num(stats['total_precipitation'], ' мм', 1)}",
-        f"• Ветер (средний): {format_num(stats['avg_wind_speed'], ' м/с', 1)}",
-        f"• Порывы (макс): {format_num(stats['max_wind_gust'], ' м/с', 1)}",
-        f"• Облачность: {format_cloud(stats['avg_cloud_cover'])}",
-        f"• Солнце: {format_sunshine(stats['total_sunshine_hours'])}\n",
-        f"<b>Температура в отдельные часы:</b>",
-        f"• 00:00 — {format_temp(stats.get('temp_0000'))}",
-        f"• 05:00 — {format_temp(stats.get('temp_0500'))}",
-        f"• 10:00 — {format_temp(stats.get('temp_1000'))}",
-        f"• 15:00 — {format_temp(stats.get('temp_1500'))}",
-        f"• 20:00 — {format_temp(stats.get('temp_2000'))}",
-        f"\nДанные о погоде за сегодня, {today}, будут готовы в 20:05."
-    ]
-
-    return "\n".join(report)
-
-
-def format_hourly_forecast(forecast_data: List[Dict[str, Any]]) -> str:
-    """
-    Форматирует почасовой прогноз для отправки в Telegram
-    """
-    if not forecast_data:
-        return "❌ Нет данных прогноза"
-
-    lines = ["<b>Прогноз на 24 часа</b>\n"]
-
-    # Сначала почасовые данные
-    for hour in forecast_data:
-        time_str = datetime.fromisoformat(hour["time"]).strftime("%H:%M %d.%m")
-
-        # Вероятность осадков - ВСЕГДА выводим
-        prob_str = f" ({hour['precip_prob']}%)"
-
-        def get_wind_direction(degrees: float) -> str:
-            """Преобразует градусы в направление ветра"""
-            directions = [
-                "С", "СВ", "В", "ЮВ",
-                "Ю", "ЮЗ", "З", "СЗ"
-            ]
-            if degrees is None:
-                return "—"
-            index = round(degrees / 45) % 8
-            return directions[index]
-
-        line = (
-            f"<b>{time_str}</b>\n"
-            f"Температура: {hour['temp']:.1f}°C\n"
-            f"Влажность: {hour['humidity']}%\n"
-            f"Осадки: {hour['precipitation']:.1f} мм\n"
-            f"Вероятность осадков: {prob_str}\n"
-            f"Ветер: {hour['wind_speed']:.1f} м/с (порывы {hour['wind_gusts']:.1f}) {get_wind_direction(hour['wind_dir'])}\n"
-            f"Облачность: {hour['cloud']}%\n"
-            f"Давление: {hour['pressure']:.0f} гПа\n"
+        # Первая строка: час + 4 группы
+        line1 = (
+            f"<pre>{time_str:<8}"
+            f"{temp_group:<8}"
+            f"{precip_group}{prob_group:<7}"
+            f"{sun_group}"
         )
-        lines.append(line)
+        lines.append(line1)
 
-    summary = format_tomorrow_forecast(forecast_data)
-    lines.append(summary)
+        # Вторая строка: остальные 4 группы
+        line2 = (
+            f"{cloud_group:<8}"
+            f"{hum_group:<7}"
+            f"{wind_group}{gust_group}</pre>"
+        )
+        lines.append(line2)
 
     return "\n".join(lines)
 
 
-def format_tomorrow_forecast(forecast_data: List[Dict[str, Any]]) -> str:
+def format_summary_report(hourly_data: List[Dict[str, Any]], period: str = "tomorrow") -> str:
     """
-    Форматирует прогноз на 24 часа (только агрегированные данные)
+    Форматирует агрегированные данные (с заголовком).
+    Для yesterday: дождь = часы с осадками > 0
+    Для прогнозов: дождь = часы с вероятностью >=20%
     """
-    if not forecast_data:
-        return "❌ Нет данных прогноза"
+    if not hourly_data:
+        return "❌ Нет данных"
 
-    # Расчет всех показателей
-    temps = [h["temp"] for h in forecast_data]
-    humidities = [h["humidity"] for h in forecast_data]
-    wind_speeds = [h["wind_speed"] for h in forecast_data]
-    wind_gusts = [h["wind_gusts"] for h in forecast_data]
-    clouds = [h["cloud"] for h in forecast_data]
-    precip_probs = [h["precip_prob"] for h in forecast_data]
+    # Заголовок
+    first_time = datetime.fromisoformat(hourly_data[0]["time"])
+    last_time = datetime.fromisoformat(hourly_data[-1]["time"])
 
-    total_precip = sum(h["precipitation"] for h in forecast_data)
-    max_precip_prob = max(precip_probs)
+    titles = {
+        "yesterday": f"Отчет по погоде за вчера, {first_time.strftime('%d.%m')}",
+        "today": f"Погода сегодня, {first_time.strftime('%d.%m')}",
+        "tomorrow": f"Прогноз погоды на завтра, {first_time.strftime('%d.%m')}",
+        "next24h": f"Прогноз на ближайшие сутки,\n{first_time.strftime('%d.%m %H:%M')} - {last_time.strftime('%d.%m %H:%M')}"
+    }
+
+    # Расчёт общих показателей (без учёта дождя)
+    temps = [h["temp"] for h in hourly_data if h["temp"] is not None]
+    humidities = [h["humidity"] for h in hourly_data if h["humidity"] is not None]
+    wind_speeds = [h["wind_speed"] for h in hourly_data if h["wind_speed"] is not None]
+    wind_gusts = [h["wind_gusts"] for h in hourly_data if h["wind_gusts"] is not None]
+    clouds = [h["cloud"] for h in hourly_data if h["cloud"] is not None]
+
+    if not temps:
+        return "❌ Нет данных о температуре"
+
+    total_precip = sum(h["precipitation"] for h in hourly_data if h["precipitation"] is not None)
+    max_precip_prob = max([h["precip_prob"] for h in hourly_data if h["precip_prob"] is not None] or [0])
     avg_wind = sum(wind_speeds) / len(wind_speeds)
-    max_gust = max(wind_gusts)
-    max_humidity = max(humidities)
+    max_gust = max(wind_gusts) if wind_gusts else 0
+    max_humidity = max(humidities) if humidities else 0
     min_temp = min(temps)
     max_temp = max(temps)
-    avg_cloud = sum(clouds) / len(clouds)
+    avg_cloud = sum(clouds) / len(clouds) if clouds else 0
     avg_temp = sum(temps) / len(temps)
 
     # Солнечные часы
-    total_sun_seconds = sum(h.get("sunshine", 0) for h in forecast_data)
+    total_sun_seconds = sum(h.get("sunshine", 0) for h in hourly_data if h.get("sunshine") is not None)
     total_sun_hours = total_sun_seconds / 3600
 
-    # Часы с вероятностью дождя >=20%
+    # --- ЛОГИКА ДОЖДЯ ---
     rainy_hours = []
-    low_prob_hours = []
 
-    for h in forecast_data:
-        prob = h["precip_prob"]
-        if prob >= 20:
-            hour_str = datetime.fromisoformat(h["time"]).strftime("%H:%M")
-            rainy_hours.append(f"{hour_str} ({prob}%)")
-        elif 5 < prob < 20:
-            low_prob_hours.append(prob)
+    if period == "yesterday":
+        # Вчера: показываем часы, когда ОСАДКИ БЫЛИ (> 0 мм)
+        for h in hourly_data:
+            if h["precipitation"] and h["precipitation"] > 0:
+                hour_str = datetime.fromisoformat(h["time"]).strftime("%H:%M")
+                rainy_hours.append(f"{hour_str} ({h['precipitation']:.1f}мм)")
+    else:
+        # Прогноз: показываем часы с ВЕРОЯТНОСТЬЮ >= 20%
+        for h in hourly_data:
+            prob = h["precip_prob"]
+            if prob is not None and prob >= 20:
+                hour_str = datetime.fromisoformat(h["time"]).strftime("%H:%M")
+                rainy_hours.append(f"{hour_str} ({prob}%)")
 
     if rainy_hours:
         rainy_str = ", ".join(rainy_hours)
-    elif low_prob_hours:
-        rainy_str = "вероятность меньше 20%"
     else:
         rainy_str = "нет"
 
+    # Строка осадков (с вероятностью только для прогнозов)
+    if period == "yesterday":
+        precip_line = f"Осадки: {total_precip:.1f} мм"
+    else:
+        max_precip_prob = max([h["precip_prob"] for h in hourly_data if h["precip_prob"] is not None] or [0])
+        precip_line = f"Осадки: {total_precip:.1f} мм (вер. {max_precip_prob}%)"
+
     summary = (
-        f"<b>Прогноз на сутки:</b>\n\n"
-        f"Температура: {min_temp:.1f}…{max_temp:.1f}°C (ср. {avg_temp:.1f})\n"
-        f"Осадки: {total_precip:.1f} мм (вер. {max_precip_prob}%)\n"
+        f"<b>{titles.get(period)}</b>\n\n"
+        f"Температура: {min_temp:.0f}…{max_temp:.0f}°C (ср. {avg_temp:.0f})\n"
+        f"{precip_line}\n"
         f"Солнца: {total_sun_hours:.1f} ч\n\n"
-        
-        f"Ветер ср: {avg_wind:.1f} м/с (порывы {max_gust:.1f})\n"
+        f"Ветер ср: {avg_wind:.0f} м/с (порывы {max_gust:.0f} м/с)\n"
         f"Облачность ср: {avg_cloud:.0f}%\n"
         f"Влажность макс: {max_humidity:.0f}%\n\n"
-        
         f"Дождь: {rainy_str}"
     )
 
