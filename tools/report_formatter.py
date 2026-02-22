@@ -76,7 +76,7 @@ def format_summary_report(hourly_data: List[Dict[str, Any]], period: str = "tomo
         "yesterday": f"Отчет по погоде за вчера, {first_time.strftime('%d.%m')}",
         "today": f"Погода сегодня, {first_time.strftime('%d.%m')}",
         "tomorrow": f"Прогноз погоды на завтра, {first_time.strftime('%d.%m')}",
-        "next24h": f"Прогноз на ближайшие сутки,\n{first_time.strftime('%d.%m %H:%M')} - {last_time.strftime('%d.%m %H:%M')}"
+        "next24h": f"Прогноз на ближайшие сутки"
     }
 
     # Расчёт общих показателей (без учёта дождя)
