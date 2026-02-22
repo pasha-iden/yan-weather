@@ -70,13 +70,13 @@ def format_summary_report(hourly_data: List[Dict[str, Any]], period: str = "tomo
 
     # Заголовок
     first_time = datetime.fromisoformat(hourly_data[0]["time"])
-    last_time = datetime.fromisoformat(hourly_data[-1]["time"])
+    # last_time = datetime.fromisoformat(hourly_data[-1]["time"])
 
     titles = {
         "yesterday": f"Отчет по погоде за вчера, {first_time.strftime('%d.%m')}",
         "today": f"Погода сегодня, {first_time.strftime('%d.%m')}",
         "tomorrow": f"Прогноз погоды на завтра, {first_time.strftime('%d.%m')}",
-        "next24h": f"Прогноз на ближайшие сутки"
+        "next24h": f"Прогноз на сутки"
     }
 
     # Расчёт общих показателей (без учёта дождя)
@@ -90,7 +90,7 @@ def format_summary_report(hourly_data: List[Dict[str, Any]], period: str = "tomo
         return "❌ Нет данных о температуре"
 
     total_precip = sum(h["precipitation"] for h in hourly_data if h["precipitation"] is not None)
-    max_precip_prob = max([h["precip_prob"] for h in hourly_data if h["precip_prob"] is not None] or [0])
+    # max_precip_prob = max([h["precip_prob"] for h in hourly_data if h["precip_prob"] is not None] or [0])
     avg_wind = sum(wind_speeds) / len(wind_speeds)
     max_gust = max(wind_gusts) if wind_gusts else 0
     max_humidity = max(humidities) if humidities else 0
