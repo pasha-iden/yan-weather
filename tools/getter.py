@@ -4,8 +4,8 @@ from typing import Dict, Any, Optional, List
 
 # Координаты Тамани
 
-TAMAN_LAT = 45.1649
-TAMAN_LON = 36.7857
+LAT = 45.1649
+LON = 36.7857
 
 # ==================== ПОЛУЧЕНИЕ ПОГОДЫ ====================
 def get_daily_weather_data(date_from: datetime, date_to: datetime) -> Optional[Dict[str, Any]]:
@@ -19,8 +19,8 @@ def get_daily_weather_data(date_from: datetime, date_to: datetime) -> Optional[D
         end_date = date_to.strftime("%Y-%m-%d")
 
         params = {
-            "latitude": TAMAN_LAT,
-            "longitude": TAMAN_LON,
+            "latitude": LAT,
+            "longitude": LON,
             "daily": [
                 "temperature_2m_mean",  # средняя температура за день
                 "relative_humidity_2m_mean",  # средняя влажность
@@ -60,8 +60,8 @@ def get_weather_data(mode: str = "forecast") -> Optional[Dict[str, Any]]:
     try:
         # Базовые параметры для всех типов запросов
         base_params = {
-            "latitude": TAMAN_LAT,
-            "longitude": TAMAN_LON,
+            "latitude": LAT,
+            "longitude": LON,
             "hourly": [
                 "temperature_2m",
                 "relative_humidity_2m",
